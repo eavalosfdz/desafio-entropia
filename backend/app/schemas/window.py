@@ -1,4 +1,5 @@
 from typing import Any, Optional
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 class WindowOut(BaseModel):
@@ -7,8 +8,12 @@ class WindowOut(BaseModel):
     imagePath: str = Field(..., alias="image_path")
     description: Optional[str] = None
     ai: Optional[Any] = Field(None, alias="ai_json")
-    createdAt: str = Field(..., alias="created_at")
+    createdAt: datetime = Field(..., alias="created_at")  # <- datetime, no str
 
     class Config:
         from_attributes = True
         populate_by_name = True
+
+class WindowCreateResponse(BaseModel):
+    isDuplicate: bool
+    window: WindowOut
