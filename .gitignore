@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+venv/
+pip-wheel-metadata/
+*.sqlite
+backend_local.db
+
+# Node / Next
+node_modules/
+.next/
+dist/
+out/
+
+# OS
+.DS_Store
+
+# Images data (cuando guardemos en disco)
+data/
