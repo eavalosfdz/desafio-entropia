@@ -9,7 +9,6 @@ export default function HomePage() {
       <main className="mx-auto max-w-6xl px-4 py-8">
         <header className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight text-center">Subir una ventana</h1>
-          {/* <p className="text-sm text-gray-600">Esta acción usa Server Actions y valida tamaño/tipo de archivo.</p> */}
         </header>
         <section aria-label="Formulario de subida">
           <UploadForm />

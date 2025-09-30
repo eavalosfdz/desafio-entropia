@@ -9,15 +9,18 @@ MAX_BYTES = MAX_MB * 1024 * 1024
 
 IMAGES_DIR = "/data/images"
 
+
 def ensure_dir():
     os.makedirs(IMAGES_DIR, exist_ok=True)
+
 
 def validate_upload(file: UploadFile) -> None:
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail=f"Unsupported content-type {file.content_type}. Allowed: {', '.join(ALLOWED_TYPES)}"
+            detail=f"Unsupported content-type {file.content_type}. Allowed: {', '.join(ALLOWED_TYPES)}",
         )
+
 
 def sniff_extension(content_type: str) -> str:
     if content_type == "image/jpeg":
@@ -26,10 +29,9 @@ def sniff_extension(content_type: str) -> str:
         return ".png"
     return ""
 
+
 def save_upload(file: UploadFile) -> Tuple[str, str]:
-    """
-    Guarda el archivo en /data/images/<uuid>.<ext>, limitando tamaño y devolviendo (uuid_filename, absolute_path).
-    """
+    #
     ensure_dir()
     ext = sniff_extension(file.content_type)
     if not ext:
@@ -47,13 +49,14 @@ def save_upload(file: UploadFile) -> Tuple[str, str]:
                 break
             total += len(chunk)
             if total > MAX_BYTES:
-                # limpiar archivo parcial
                 f.close()
                 try:
                     os.remove(abs_path)
                 except OSError:
                     pass
-                raise HTTPException(status_code=422, detail=f"Image too large (> {MAX_MB} MB)")
+                raise HTTPException(
+                    status_code=422, detail=f"Image too large (> {MAX_MB} MB)"
+                )
             f.write(chunk)
 
     # resetear el puntero para futuros usos (ej. hashing previo si fuera necesario)

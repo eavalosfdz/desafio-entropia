@@ -91,6 +91,7 @@ async def _generate(
     return data.get("response", "") if isinstance(data, dict) else ""
 
 
+# TODO
 async def analyze_window_image(abs_path: str) -> Tuple[str, Dict[str, Any]]:
     """
     Devuelve (description, ai_json). Hace 2 llamadas: descripción y JSON.

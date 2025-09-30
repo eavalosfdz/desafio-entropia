@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .db import Base, engine
 from .api.routes import router as api_router
 
+
 def create_app() -> FastAPI:
     app = FastAPI(title="Red Social de Ventanas - API")
 
@@ -16,10 +17,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Crear tablas si no existen (en local). Con Docker usaremos Alembic.
+    # Crear tablas si no existen
     Base.metadata.create_all(bind=engine)
 
     app.include_router(api_router, prefix="/api")
     return app
+
 
 app = create_app()

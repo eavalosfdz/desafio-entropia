@@ -24,6 +24,7 @@ export default function WindowCard({ id, description, ai, createdAt, highlighted
     ].filter(([, v]) => v && v !== "unknown") as [string, string][];
 
     const [isHighlighting, setIsHighlighting] = React.useState(false);
+    const [desc, setDesc] = React.useState(description);
 
     // Enciende el highlight cuando llega un id a resaltar y apágalo tras 3s
     React.useEffect(() => {
@@ -33,6 +34,34 @@ export default function WindowCard({ id, description, ai, createdAt, highlighted
             return () => clearTimeout(t);
         }
     }, [highlighted]);
+
+    // Poll for description if it's null, but stop after 2 minutes
+    React.useEffect(() => {
+        setDesc(description);
+        if (description === null) {
+            let elapsed = 0;
+            const interval = setInterval(async () => {
+                elapsed += 10000;
+                if (elapsed >= 120000) {
+                    clearInterval(interval);
+                    return;
+                }
+                try {
+                    const res = await fetch(`http://localhost:8000/api/windows/${id}`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data.description) {
+                            setDesc(data.description);
+                            clearInterval(interval);
+                        }
+                    }
+                } catch (e) {
+                    // ignore fetch errors
+                }
+            }, 10000);
+            return () => clearInterval(interval);
+        }
+    }, [id, description]);
 
     function buildAlt(ai: Record<string, string> | null | undefined) {
         if (!ai) return "Fotografía de una ventana";
@@ -65,7 +94,7 @@ export default function WindowCard({ id, description, ai, createdAt, highlighted
 
             <div className="p-3">
                 <h3 id={`title-${id}`} className="line-clamp-2 text-[15px] font-medium text-gray-900">
-                    {description || "Ventana sin descripción (IA pendiente o fallida)"}
+                    {desc || "Description loading..."}
                 </h3>
 
                 {tags.length > 0 && (

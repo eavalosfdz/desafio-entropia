@@ -76,7 +76,7 @@ export default async function FeedPage({
                                 defaultValue={String(pageSize)}
                                 className="ml-2 rounded-md border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-black/40"
                             >
-                                {[6, 12, 24, 48].map((n) => (
+                                {[2, 4, 6, 12, 24].map((n) => (
                                     <option key={n} value={n}>
                                         {n}
                                     </option>
@@ -147,7 +147,9 @@ export default async function FeedPage({
                 </nav>
 
                 {/* Botón flotante de subida */}
-                <UploadDialog />
+                <div className="z-50 fixed bottom-6 right-6">
+                    <UploadDialog />
+                </div>
             </main>
         </>
     );

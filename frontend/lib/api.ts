@@ -48,7 +48,7 @@ export async function fetchWindows(
 }
 
 export function imageUrl(id: string) {
-    // Para <img> en el cliente, usamos la pública (browser no ve "api:8000")
+    //
     const base = (
         process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"
     ).replace(/\/$/, "");

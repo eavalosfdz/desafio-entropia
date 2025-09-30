@@ -8,12 +8,13 @@ from fastapi import (
     status,
     Response,
     Query,
+    BackgroundTasks,
 )
 from fastapi.responses import FileResponse
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
 
-from ..db import get_db
+from ..db import get_db, SessionLocal
 from ..models.window import Window
 from ..schemas.window import WindowOut, WindowCreateResponse
 from ..schemas.paging import WindowPage, PageMeta
@@ -30,9 +31,7 @@ def health():
     return {"ok": True}
 
 
-# ------------------------------
-# Feed con paginación + filtros
-# ------------------------------
+# GET para todas las ventanas existentes
 @router.get("/windows", response_model=WindowPage)
 def list_windows(
     db: Session = Depends(get_db),
@@ -49,7 +48,6 @@ def list_windows(
 ):
     q = select(Window)
 
-    # Filtros sobre JSONB (Postgres). Ej: Window.ai_json['daytime'].as_string() == 'day'
     def jf(key: str, val: Optional[str]):
         nonlocal q
         if val is not None:
@@ -63,10 +61,8 @@ def list_windows(
     jf("covering", covering)
     jf("openState", openState)
 
-    # Total para paginar
     total = db.execute(select(func.count()).select_from(q.subquery())).scalar_one()
 
-    # Orden nuevo -> antiguo
     q = q.order_by(Window.created_at.desc())
 
     # Paginación
@@ -79,9 +75,7 @@ def list_windows(
     )
 
 
-# ------------------------------
 # Detalle por ID
-# ------------------------------
 @router.get("/windows/{id}", response_model=WindowOut)
 def get_window(id: str, db: Session = Depends(get_db)):
     row = db.get(Window, id)
@@ -90,9 +84,7 @@ def get_window(id: str, db: Session = Depends(get_db)):
     return row
 
 
-# ------------------------------
-# Servir imagen binaria
-# ------------------------------
+# GET de imagen especifica
 @router.get("/windows/{id}/image")
 def get_window_image(id: str, db: Session = Depends(get_db)):
     row = db.get(Window, id)
@@ -106,55 +98,62 @@ def get_window_image(id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=410, detail="Image file missing")  # Gone
 
 
-# ------------------------------
-# Subir imagen (hash + duplicados + IA)
-# ------------------------------
+# POST nueva imagen
 @router.post(
     "/windows", response_model=WindowCreateResponse, status_code=status.HTTP_201_CREATED
 )
 async def upload_window(
-    file: UploadFile, response: Response, db: Session = Depends(get_db)
+    file: UploadFile,
+    response: Response,
+    db: Session = Depends(get_db),
+    background: BackgroundTasks = None,
 ):
-    # 1) Validación de tipo y tamaño
+    # 1) valida tipo/tamaño
     validate_upload(file)
 
-    # 2) Hash de los bytes crudos
+    # 2) hash
     digest = sha256_stream(file.file)
 
-    # 3) ¿Duplicado?
+    # 3) checar duplicado
     existing: Window | None = db.execute(
         select(Window).where(Window.sha256 == digest)
     ).scalar_one_or_none()
-
     if existing:
         response.status_code = status.HTTP_200_OK
         return WindowCreateResponse(isDuplicate=True, window=existing)
 
-    # 4) Guardar archivo en disco
+    # 4) guarda archivo
     fname, abs_path = save_upload(file)
 
-    # 5) Crear row base
-    win = Window(
-        sha256=digest,
-        image_path=f"/data/images/{fname}",
-    )
+    # 5) crea registro en base de datos
+    win = Window(sha256=digest, image_path=f"/data/images/{fname}")
     db.add(win)
     db.commit()
     db.refresh(win)
 
-    # 6) Llamar IA (no rompas creación si falla)
-    try:
-        description, obj = await analyze_window_image(abs_path)
-        win.description = description or None
-        win.ai_json = obj if isinstance(obj, dict) else None
-        db.add(win)
-        db.commit()
-        db.refresh(win)
-    except Exception as e:
-        import traceback
+    # 6) generar datos de IA
+    async def _analyze_and_update(window_id: str, abs_path: str):
+        _db = SessionLocal()
+        try:
+            desc, obj = await analyze_window_image(abs_path)
+            w = _db.get(Window, window_id)
+            if w:
+                w.description = desc or None
+                w.ai_json = obj if isinstance(obj, dict) else None
+                _db.add(w)
+                _db.commit()
+        except Exception as e:
+            import traceback
 
-        print("[AI ERROR]", e)
-        traceback.print_exc()
+            print("[AI ERROR]", e)
+            traceback.print_exc()
+        finally:
+            _db.close()
+
+    if background is not None:
+        background.add_task(_analyze_and_update, win.id, abs_path)
+    else:
+        await _analyze_and_update(win.id, abs_path)
 
     return WindowCreateResponse(isDuplicate=False, window=win)
 

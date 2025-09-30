@@ -30,8 +30,6 @@ export default function FlashBanner({
         const cleanT = setTimeout(() => {
             const next = new URLSearchParams(sp.toString());
             next.delete("intent");
-            // si quieres limpiar también el highlight, descomenta:
-            // next.delete("highlight");
             router.replace(`${pathname}?${next.toString()}`, { scroll: false });
         }, hideAfterMs + 50);
 
