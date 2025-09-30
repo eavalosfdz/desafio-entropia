@@ -34,40 +34,46 @@ export default function WindowCard({ id, description, ai, createdAt, highlighted
         }
     }, [highlighted]);
 
-    return (
-        <article className="group relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5 transition hover:shadow-md">
-            {/* Overlay del highlight (aparece y se desvanece) */}
-            {isHighlighting && (
-                <div className="pointer-events-none absolute inset-0 z-20 rounded-2xl">
-                    <div className="absolute inset-0 rounded-2xl border-2 border-blue-500/90 highlight-ring" />
-                </div>
-            )}
+    function buildAlt(ai: Record<string, string> | null | undefined) {
+        if (!ai) return "Fotografía de una ventana";
+        const bits = [
+            ai.daytime && ai.daytime !== "unknown" ? ai.daytime : null,
+            ai.location && ai.location !== "unknown" ? ai.location : null,
+            ai.type && ai.type !== "unknown" ? ai.type : null,
+            ai.material && ai.material !== "unknown" ? ai.material : null,
+        ].filter(Boolean);
+        return bits.length ? `Ventana ${bits.join(", ")}` : "Fotografía de una ventana";
+    }
 
-            <div className="relative aspect-video w-full bg-gray-100">
+    return (
+        <article className="group relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5 transition hover:shadow-md" aria-labelledby={`title-${id}`}>
+            <figure className="relative aspect-video w-full bg-gray-100">
                 <img
                     src={imageUrl(id)}
-                    alt={description || "window image"}
+                    alt={description ? description : buildAlt(ai)}
                     className="h-full w-full object-cover transition group-hover:scale-[1.02]"
                     loading="lazy"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-90"></div>
-                {/* <time className="absolute left-3 top-3 rounded-md bg-black/60 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+                {/* <time
+                    className="absolute left-3 top-3 rounded-md bg-black/60 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm"
+                    dateTime={created.toISOString()}
+                >
                     {created.toLocaleString()}
                 </time> */}
-            </div>
+            </figure>
 
             <div className="p-3">
-                <p className="line-clamp-2 text-[15px] font-medium text-gray-900">
-                    {description || "Sin descripción (IA pendiente o fallida)"}
-                </p>
+                <h3 id={`title-${id}`} className="line-clamp-2 text-[15px] font-medium text-gray-900">
+                    {description || "Ventana sin descripción (IA pendiente o fallida)"}
+                </h3>
 
                 {tags.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-1.5">
+                    <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Características detectadas">
                         {tags.map(([k, v]) => (
                             <span
                                 key={k}
                                 className="inline-flex items-center gap-1 rounded-full border bg-gray-50 px-2 py-0.5 text-[11px] text-gray-700"
-                                title={k}
                             >
                                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-gray-700" />
                                 {v}
@@ -76,30 +82,6 @@ export default function WindowCard({ id, description, ai, createdAt, highlighted
                     </div>
                 )}
             </div>
-
-            {/* CSS-in-JS: animación del ring que hace fade y shrink */}
-            <style jsx>{`
-        @keyframes fadeRing {
-          0% {
-            opacity: 1;
-            transform: scale(1);
-            box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.35);
-          }
-          60% {
-            opacity: 0.6;
-            transform: scale(1.01);
-            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
-          }
-          100% {
-            opacity: 0;
-            transform: scale(1.015);
-            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
-          }
-        }
-        .highlight-ring {
-          animation: fadeRing 3s ease-out forwards;
-        }
-      `}</style>
         </article>
     );
 }

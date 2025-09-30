@@ -1,6 +1,14 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, UploadFile, HTTPException, status, Response, Query
+from fastapi import (
+    APIRouter,
+    Depends,
+    UploadFile,
+    HTTPException,
+    status,
+    Response,
+    Query,
+)
 from fastapi.responses import FileResponse
 from sqlalchemy import select, func
 from sqlalchemy.orm import Session
@@ -16,9 +24,11 @@ from ..services.mime import guess_image_mime
 
 router = APIRouter()
 
+
 @router.get("/health")
 def health():
     return {"ok": True}
+
 
 # ------------------------------
 # Feed con paginación + filtros
@@ -54,9 +64,7 @@ def list_windows(
     jf("openState", openState)
 
     # Total para paginar
-    total = db.execute(
-        select(func.count()).select_from(q.subquery())
-    ).scalar_one()
+    total = db.execute(select(func.count()).select_from(q.subquery())).scalar_one()
 
     # Orden nuevo -> antiguo
     q = q.order_by(Window.created_at.desc())
@@ -70,6 +78,7 @@ def list_windows(
         meta=PageMeta(page=page, pageSize=pageSize, total=total),
     )
 
+
 # ------------------------------
 # Detalle por ID
 # ------------------------------
@@ -79,6 +88,7 @@ def get_window(id: str, db: Session = Depends(get_db)):
     if not row:
         raise HTTPException(status_code=404, detail="Not found")
     return row
+
 
 # ------------------------------
 # Servir imagen binaria
@@ -95,11 +105,16 @@ def get_window_image(id: str, db: Session = Depends(get_db)):
     except FileNotFoundError:
         raise HTTPException(status_code=410, detail="Image file missing")  # Gone
 
+
 # ------------------------------
 # Subir imagen (hash + duplicados + IA)
 # ------------------------------
-@router.post("/windows", response_model=WindowCreateResponse, status_code=status.HTTP_201_CREATED)
-async def upload_window(file: UploadFile, response: Response, db: Session = Depends(get_db)):
+@router.post(
+    "/windows", response_model=WindowCreateResponse, status_code=status.HTTP_201_CREATED
+)
+async def upload_window(
+    file: UploadFile, response: Response, db: Session = Depends(get_db)
+):
     # 1) Validación de tipo y tamaño
     validate_upload(file)
 
@@ -130,14 +145,48 @@ async def upload_window(file: UploadFile, response: Response, db: Session = Depe
     # 6) Llamar IA (no rompas creación si falla)
     try:
         description, obj = await analyze_window_image(abs_path)
-        win.description = (description or None)
+        win.description = description or None
         win.ai_json = obj if isinstance(obj, dict) else None
         db.add(win)
         db.commit()
         db.refresh(win)
     except Exception as e:
         import traceback
+
         print("[AI ERROR]", e)
         traceback.print_exc()
 
     return WindowCreateResponse(isDuplicate=False, window=win)
+
+
+# mostrar si la imagen es duplicada
+@router.get("/windows/{id}/duplicates", response_model=WindowPage)
+def get_window_duplicates(
+    id: str,
+    db: Session = Depends(get_db),
+    page: int = Query(1, ge=1),
+    pageSize: int = Query(20, ge=1, le=100),
+):
+    # 1) Cargar la ventana base
+    base = db.get(Window, id)
+    if not base:
+        raise HTTPException(status_code=404, detail="Not found")
+
+    # 2) Query por mismo sha256, excluyendo el propio id
+    q = select(Window).where(
+        Window.sha256 == base.sha256,
+        Window.id != base.id,
+    )
+
+    # 3) Total para paginación
+    total = db.execute(select(func.count()).select_from(q.subquery())).scalar_one()
+
+    # 4) Orden (nuevo -> antiguo) + paginación
+    q = q.order_by(Window.created_at.desc())
+    offset = (page - 1) * pageSize
+    items = db.execute(q.offset(offset).limit(pageSize)).scalars().all()
+
+    return WindowPage(
+        items=items,
+        meta=PageMeta(page=page, pageSize=pageSize, total=total),
+    )

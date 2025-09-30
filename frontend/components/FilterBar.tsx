@@ -27,19 +27,23 @@ export default function FilterBar() {
   };
 
   return (
-    <form id="filters" action="/feed" method="get" className="rounded-xl border bg-white p-3 shadow-sm mb-4">
+    <form id="filters" action="/feed" method="get" className="rounded-xl border bg-white p-3 shadow-sm" aria-labelledby="filters-legend">
       <input type="hidden" name="page" value="1" />
       <input type="hidden" name="pageSize" value={pageSize} />
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 text-black">
-        <Select name="daytime" label="Daytime" value={current.daytime} options={OPTIONS.daytime} />
-        <Select name="location" label="Location" value={current.location} options={OPTIONS.location} />
-        <Select name="type" label="Type" value={current.type} options={OPTIONS.type} />
-        <Select name="material" label="Material" value={current.material} options={OPTIONS.material} />
-        <Select name="panes" label="Panes" value={current.panes} options={OPTIONS.panes} />
-        <Select name="covering" label="Covering" value={current.covering} options={OPTIONS.covering} />
-        <Select name="openState" label="Open state" value={current.openState} options={OPTIONS.openState} />
-      </div>
+      <fieldset>
+        <legend id="filters-legend" className="sr-only">Filtros del feed</legend>
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 text-black">
+          <Select name="daytime" label="Daytime" value={current.daytime} options={OPTIONS.daytime} />
+          <Select name="location" label="Location" value={current.location} options={OPTIONS.location} />
+          <Select name="type" label="Type" value={current.type} options={OPTIONS.type} />
+          <Select name="material" label="Material" value={current.material} options={OPTIONS.material} />
+          <Select name="panes" label="Panes" value={current.panes} options={OPTIONS.panes} />
+          <Select name="covering" label="Covering" value={current.covering} options={OPTIONS.covering} />
+          <Select name="openState" label="Open state" value={current.openState} options={OPTIONS.openState} />
+        </div>
+      </fieldset>
 
       <div className="mt-3 flex items-center justify-end gap-2 border-t pt-3">
         <a
@@ -51,6 +55,7 @@ export default function FilterBar() {
         <button
           type="submit"
           className="rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-900"
+          aria-label="Aplicar filtros al feed"
         >
           Aplicar filtros
         </button>

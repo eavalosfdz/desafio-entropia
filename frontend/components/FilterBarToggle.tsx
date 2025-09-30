@@ -10,12 +10,14 @@ export default function FilterBarToggle() {
         <div className="mb-2">
             <button
                 type="button"
+                aria-expanded={show}
+                aria-controls="filters-panel"
                 className="mb-2 rounded-md text-black border px-3 py-1 text-sm bg-gray-50 hover:bg-gray-100"
                 onClick={() => setShow((v) => !v)}
             >
-                Filtros     ᐯ
+                Filtros <span >ᐯ</span>
             </button>
-            {show && <FilterBar />}
+            {show && <div id="filters-panel"><FilterBar /></div>}
         </div>
     );
 }

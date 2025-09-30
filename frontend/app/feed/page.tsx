@@ -27,10 +27,11 @@ export default async function FeedPage({
     searchParams?: Promise<SearchParams>;
 }) {
     const sp = (await searchParams) ?? {};
-    const page = Number(sp.page ?? 1);
-    const pageSize = Number(sp.pageSize ?? 12);
+    const page = Math.max(1, Number(sp.page ?? 1));
+    const pageSize = Math.max(1, Number(sp.pageSize ?? 12));
     const highlight = sp.highlight;
 
+    // Llamada al backend tal cual tu API
     const data = await fetchWindows({
         page,
         pageSize,
@@ -51,20 +52,48 @@ export default async function FeedPage({
     return (
         <>
             <TopBar />
-            <main className="mx-auto max-w-6xl px-4 py-6">
+            <main id="main" className="mx-auto max-w-6xl px-4 py-6 flex flex-col gap-6">
                 <FlashBanner intent={sp.intent} />
 
-                <header className="mb-6 flex items-end justify-between gap-3">
+                <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-semibold">Windows Feed</h1>
                         <p className="text-sm text-gray-600">
                             {meta.total} resultados • página {meta.page} de {totalPages}
                         </p>
                     </div>
+
+                    {/* Selector de page size (opcional) para paginacion */}
+                    <form className="flex items-center gap-2" action="/feed" method="get">
+                        <input type="hidden" name="page" value="1" />
+                        {FILTER_KEYS.map((k) =>
+                            sp[k] ? <input key={k} type="hidden" name={k} value={sp[k] as string} /> : null
+                        )}
+                        <label className="text-sm text-gray-700">
+                            Page size:
+                            <select
+                                name="pageSize"
+                                defaultValue={String(pageSize)}
+                                className="ml-2 rounded-md border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-black/40"
+                            >
+                                {[6, 12, 24, 48].map((n) => (
+                                    <option key={n} value={n}>
+                                        {n}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <button
+                            type="submit"
+                            className="rounded-md border bg-gray-50 px-3 py-1 text-sm text-black hover:bg-gray-100"
+                        >
+                            Aplicar
+                        </button>
+                    </form>
                 </header>
 
                 <FilterBarToggle />
-                <div></div>
+
                 {items.length === 0 ? (
                     <div className="rounded-xl border p-10 text-center text-gray-600">
                         No hay elementos aún.
@@ -84,26 +113,58 @@ export default async function FeedPage({
                     </div>
                 )}
 
-                <nav className="mt-8 flex items-center justify-between">
-                    <a
-                        className={`rounded-md border px-3 py-1 text-sm ${!prevPage ? "pointer-events-none opacity-50" : "hover:bg-gray-50"
-                            }`}
-                        href={`/feed?page=${prevPage ?? page}&pageSize=${meta.pageSize}`}
-                        aria-disabled={!prevPage}
-                    >
-                        ← Prev
-                    </a>
+                {/* Paginación preservando filtros */}
+                <nav className="mt-2 flex items-center justify-between" aria-label="Paginación">
+                    {/* Prev */}
+                    {prevPage ? (
+                        <a
+                            className="rounded-md border px-3 py-1 text-sm hover:bg-gray-50"
+                            href={`/feed?page=${prevPage}&pageSize=${meta.pageSize}${buildFilterQS(sp)}`}
+                            rel="prev"
+                        >
+                            ← Prev
+                        </a>
+                    ) : (
+                        <span className="rounded-md border px-3 py-1 text-sm opacity-50" aria-disabled="true">
+                            ← Prev
+                        </span>
+                    )}
 
-                    <a
-                        className={`rounded-md border px-3 py-1 text-sm ${!nextPage ? "pointer-events-none opacity-50" : "hover:bg-gray-50"
-                            }`}
-                        href={`/feed?page=${nextPage ?? page}&pageSize=${meta.pageSize}`}
-                        aria-disabled={!nextPage}
-                    >
-                        Next →
-                    </a>
+                    {/* Next */}
+                    {nextPage ? (
+                        <a
+                            className="rounded-md border px-3 py-1 text-sm hover:bg-gray-50"
+                            href={`/feed?page=${nextPage}&pageSize=${meta.pageSize}${buildFilterQS(sp)}`}
+                            rel="next"
+                        >
+                            Next →
+                        </a>
+                    ) : (
+                        <span className="rounded-md border px-3 py-1 text-sm opacity-50" aria-disabled="true">
+                            Next →
+                        </span>
+                    )}
                 </nav>
+
+                {/* Botón flotante de subida */}
+                <UploadDialog />
             </main>
         </>
     );
+}
+
+const FILTER_KEYS = [
+    "daytime",
+    "location",
+    "type",
+    "material",
+    "panes",
+    "covering",
+    "openState",
+] as const;
+
+function buildFilterQS(sp: Record<string, string | undefined>) {
+    return FILTER_KEYS.map((k) =>
+        sp[k] ? `&${k}=${encodeURIComponent(sp[k] as string)}` : ""
+    ).join("");
 }

@@ -16,6 +16,10 @@ export default function TopBar() {
                     </div>
                     <span className="text-lg font-bold tracking-tight text-[var(--accent)] select-none">Windowgram</span>
                 </Link>
+                <nav aria-label="Principal" className="flex text-white items-center gap-3 ml-auto">
+                    <Link className="text-sm hover:underline" href="/">Subir</Link>
+                    <Link className="text-sm hover:underline" href="/feed">Feed</Link>
+                </nav>
             </div>
         </header>
     );
