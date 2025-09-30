@@ -27,7 +27,7 @@ export default function FilterBar() {
   };
 
   return (
-    <form id="filters" action="/" method="get" className="rounded-xl border bg-white p-3 shadow-sm">
+    <form id="filters" action="/feed" method="get" className="rounded-xl border bg-white p-3 shadow-sm mb-4">
       <input type="hidden" name="page" value="1" />
       <input type="hidden" name="pageSize" value={pageSize} />
 
@@ -43,7 +43,7 @@ export default function FilterBar() {
 
       <div className="mt-3 flex items-center justify-end gap-2 border-t pt-3">
         <a
-          href={`/?page=1&pageSize=${pageSize}`}
+          href={`/feed?page=1&pageSize=${pageSize}`}
           className="rounded-md border text-black px-3 py-2 text-sm hover:bg-gray-50"
         >
           Limpiar

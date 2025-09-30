@@ -1,9 +1,9 @@
 import { fetchWindows } from "@/lib/api";
 import WindowCard from "@/components/WindowCard";
-import UploadDialog from "@/components/UploadDialog";
-// import FilterBar from "@/components/FilterBar";
 import TopBar from "@/components/TopBar";
+import FlashBanner from "@/components/FlashBanner";
 import FilterBarToggle from "@/components/FilterBarToggle";
+import UploadDialog from "@/components/UploadDialog";
 
 type SearchParams = {
     page?: string;
@@ -16,11 +16,12 @@ type SearchParams = {
     covering?: string;
     openState?: string;
     highlight?: string;
+    intent?: string;
 };
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage({
+export default async function FeedPage({
     searchParams,
 }: {
     searchParams?: Promise<SearchParams>;
@@ -50,49 +51,59 @@ export default async function HomePage({
     return (
         <>
             <TopBar />
-            <main className="mx-auto max-w-4xl px-4 py-12 min-h-[80vh] flex flex-col items-center bg-[var(--background)]">
-                <section className="mb-10 text-center">
-                    <h1 className="text-4xl font-extrabold tracking-tight text-[var(--accent)] mb-2 drop-shadow-sm">
-                        Bienvenido a Windowgram
-                    </h1>
-                    <p className="text-lg text-[var(--foreground)]/80 mb-6 max-w-2xl mx-auto">
-                        Comparte y explora ventanas de todo el mundo. Sube tus fotos, filtra por
-                        características y descubre nuevas perspectivas.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <UploadDialog />
-                        <div className="flex items-center justify-center">
-                            <FilterBarToggle />
-                        </div>
-                    </div>
-                </section>
+            <main className="mx-auto max-w-6xl px-4 py-6">
+                <FlashBanner intent={sp.intent} />
 
-                <section className="w-full">
-                    {items.length === 0 ? (
-                        <div className="rounded-xl border border-[var(--card-border)] bg-[var(--card-bg)] p-10 text-center text-[var(--foreground)]/60 shadow-sm">
-                            No hay elementos con los filtros actuales. Sube una imagen con “Añadir”.
-                        </div>
-                    ) : (
-                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            {items.map((w) => (
-                                <WindowCard
-                                    key={w.id}
-                                    id={w.id}
-                                    description={w.description}
-                                    ai={(w.ai || null) as never}
-                                    createdAt={w.createdAt}
-                                    highlighted={highlight === w.id}
-                                />
-                            ))}
-                        </div>
-                    )}
-                </section>
+                <header className="mb-6 flex items-end justify-between gap-3">
+                    <div>
+                        <h1 className="text-2xl font-semibold">Windows Feed</h1>
+                        <p className="text-sm text-gray-600">
+                            {meta.total} resultados • página {meta.page} de {totalPages}
+                        </p>
+                    </div>
+                </header>
+
+                <FilterBarToggle />
+                <div></div>
+                {items.length === 0 ? (
+                    <div className="rounded-xl border p-10 text-center text-gray-600">
+                        No hay elementos aún.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                        {items.map((w) => (
+                            <WindowCard
+                                key={w.id}
+                                id={w.id}
+                                description={w.description}
+                                ai={(w.ai || null) as never}
+                                createdAt={w.createdAt}
+                                highlighted={highlight === w.id}
+                            />
+                        ))}
+                    </div>
+                )}
+
+                <nav className="mt-8 flex items-center justify-between">
+                    <a
+                        className={`rounded-md border px-3 py-1 text-sm ${!prevPage ? "pointer-events-none opacity-50" : "hover:bg-gray-50"
+                            }`}
+                        href={`/feed?page=${prevPage ?? page}&pageSize=${meta.pageSize}`}
+                        aria-disabled={!prevPage}
+                    >
+                        ← Prev
+                    </a>
+
+                    <a
+                        className={`rounded-md border px-3 py-1 text-sm ${!nextPage ? "pointer-events-none opacity-50" : "hover:bg-gray-50"
+                            }`}
+                        href={`/feed?page=${nextPage ?? page}&pageSize=${meta.pageSize}`}
+                        aria-disabled={!nextPage}
+                    >
+                        Next →
+                    </a>
+                </nav>
             </main>
         </>
     );
-}
-
-function buildFilterQS(sp: Record<string, string | undefined>) {
-    const keys = ["daytime", "location", "type", "material", "panes", "covering", "openState"];
-    return keys.map((k) => (sp[k] ? `&${k}=${encodeURIComponent(sp[k] as string)}` : "")).join("");
 }

@@ -23,11 +23,26 @@ export default function WindowCard({ id, description, ai, createdAt, highlighted
         ["open", ai?.openState],
     ].filter(([, v]) => v && v !== "unknown") as [string, string][];
 
+    const [isHighlighting, setIsHighlighting] = React.useState(false);
+
+    // Enciende el highlight cuando llega un id a resaltar y apágalo tras 3s
+    React.useEffect(() => {
+        if (highlighted) {
+            setIsHighlighting(true);
+            const t = setTimeout(() => setIsHighlighting(false), 3000);
+            return () => clearTimeout(t);
+        }
+    }, [highlighted]);
+
     return (
-        <article
-            className={`group relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5 transition hover:shadow-md ${highlighted ? "outline-2 outline-blue-500" : ""
-                }`}
-        >
+        <article className="group relative overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-black/5 transition hover:shadow-md">
+            {/* Overlay del highlight (aparece y se desvanece) */}
+            {isHighlighting && (
+                <div className="pointer-events-none absolute inset-0 z-20 rounded-2xl">
+                    <div className="absolute inset-0 rounded-2xl border-2 border-blue-500/90 highlight-ring" />
+                </div>
+            )}
+
             <div className="relative aspect-video w-full bg-gray-100">
                 <img
                     src={imageUrl(id)}
@@ -36,9 +51,9 @@ export default function WindowCard({ id, description, ai, createdAt, highlighted
                     loading="lazy"
                 />
                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-90"></div>
-                <time className="absolute left-3 top-3 rounded-md bg-black/60 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+                {/* <time className="absolute left-3 top-3 rounded-md bg-black/60 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
                     {created.toLocaleString()}
-                </time>
+                </time> */}
             </div>
 
             <div className="p-3">
@@ -54,17 +69,37 @@ export default function WindowCard({ id, description, ai, createdAt, highlighted
                                 className="inline-flex items-center gap-1 rounded-full border bg-gray-50 px-2 py-0.5 text-[11px] text-gray-700"
                                 title={k}
                             >
-                                <Dot />
+                                <span className="inline-block h-1.5 w-1.5 rounded-full bg-gray-700" />
                                 {v}
                             </span>
                         ))}
                     </div>
                 )}
             </div>
+
+            {/* CSS-in-JS: animación del ring que hace fade y shrink */}
+            <style jsx>{`
+        @keyframes fadeRing {
+          0% {
+            opacity: 1;
+            transform: scale(1);
+            box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.35);
+          }
+          60% {
+            opacity: 0.6;
+            transform: scale(1.01);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+          }
+          100% {
+            opacity: 0;
+            transform: scale(1.015);
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+          }
+        }
+        .highlight-ring {
+          animation: fadeRing 3s ease-out forwards;
+        }
+      `}</style>
         </article>
     );
-}
-
-function Dot() {
-    return <span className="inline-block h-1.5 w-1.5 rounded-full bg-gray-700" />;
 }

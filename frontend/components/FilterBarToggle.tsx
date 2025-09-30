@@ -7,7 +7,7 @@ export default function FilterBarToggle() {
     const [show, setShow] = useState(false);
 
     return (
-        <div>
+        <div className="mb-2">
             <button
                 type="button"
                 className="mb-2 rounded-md text-black border px-3 py-1 text-sm bg-gray-50 hover:bg-gray-100"

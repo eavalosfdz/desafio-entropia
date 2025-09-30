@@ -57,7 +57,7 @@ export default function UploadDialog() {
             const pageSize = sp.get("pageSize") ?? "12";
             const intent = resp.isDuplicate ? "duplicate" : "created";
             close();
-            router.push(`/?page=${page}&pageSize=${pageSize}&intent=${intent}&highlight=${resp.window.id}`);
+            router.push(`/feed?page=${page}&pageSize=${pageSize}&intent=${intent}&highlight=${resp.window.id}`);
         } catch (err: unknown) {
             if (err instanceof Error) {
                 setError(err.message);
